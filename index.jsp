@@ -6,7 +6,7 @@
 
 <h1>Tomcat Deployment Successful!</h1>
 
-<h2>AWS EC2 + Tomcat 11</h2>
+<h2>AWS EC2 + Tomcat 11 + github</h2>
 
 <p>Server Time:</p>
 
