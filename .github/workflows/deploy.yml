@@ -1,0 +1,40 @@
+name: Deploy to Tomcat
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'index.jsp'
+      - '.github/workflows/deploy.yml'
+
+jobs:
+  deploy:
+    runs-on: Amazon-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build WAR from index.jsp
+        run: |
+          mkdir build && cp index.jsp build/
+          cd build && jar -cvf ../testapp.war .
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_PRIVATE_KEY }}" > ~/.ssh/ec2.pem
+          chmod 600 ~/.ssh/ec2.pem
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Upload WAR
+        run: |
+          scp -i ~/.ssh/ec2.pem testapp.war \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/testapp.war
+
+      - name: Deploy
+        run: |
+          ssh -i ~/.ssh/ec2.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            sudo cp /tmp/testapp.war /opt/tomcat/webapps/testapp.war
+            sudo chown tomcat:tomcat /opt/tomcat/webapps/testapp.war
+            rm /tmp/testapp.war
+          EOF
